@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Resumable Upload POC</title>
+  </head>
+  <body>
+    <input name="upload file" type="file" id="file-input" />
+
+    <script type="module">
+      import {
+        Uppy,
+        Tus,
+      } from "https://releases.transloadit.com/uppy/v3.18.1/uppy.min.mjs";
+
+      const token = "anon-key"; // replace with your own key
+      const projectId = "project-id"; // replace with your own project id
+      const bucketName = "audio-bucket";
+      const folderName = String(Date.now());
+      const supabaseUploadURL = `https://${projectId}.supabase.co/storage/v1/upload/resumable`;
+      const fileInput = document.getElementById("file-input");
+
+      const uppy = new Uppy().use(Tus, {
+        endpoint: supabaseUploadURL,
+        headers: {
+          authorization: `Bearer ${token}`,
+        },
+        chunkSize: 6 * 1024 * 1024,
+        allowedMetaFields: [
+          "bucketName",
+          "objectName",
+          "contentType",
+          "cacheControl",
+        ],
+      });
+
+      fileInput.addEventListener("change", async (event) => {
+        uppy.addFile({
+          name: event.target.files[0].name,
+          type: event.target.files[0].type,
+          data: event.target.files[0],
+        });
+
+        const result = await uppy.upload();
+        console.log(result);
+      });
+    </script>
+  </body>
+</html>
