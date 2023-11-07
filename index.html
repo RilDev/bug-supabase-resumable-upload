@@ -14,17 +14,19 @@
         Tus,
       } from "https://releases.transloadit.com/uppy/v3.18.1/uppy.min.mjs";
 
-      const token = "anon-key"; // replace with your own key
-      const projectId = "project-id"; // replace with your own project id
-      const bucketName = "audio-bucket";
-      const folderName = String(Date.now());
-      const supabaseUploadURL = `https://${projectId}.supabase.co/storage/v1/upload/resumable`;
+      const SUPABASE_ANON_KEY = "anon-key"; // replace with your own key
+      const SUPABASE_PROJECT_ID = "project-id"; // replace with your own project id
+      const STORAGE_BUCKET = "resumable-uploads"; // replace with your own bucket name
+      const BEARER_TOKEN = "bearer-token"; // replace with your own token
+
+      const supabaseStorageURL = `https://${SUPABASE_PROJECT_ID}.supabase.co/storage/v1/upload/resumable`;
       const fileInput = document.getElementById("file-input");
 
       const uppy = new Uppy().use(Tus, {
-        endpoint: supabaseUploadURL,
+        endpoint: supabaseStorageURL,
         headers: {
-          authorization: `Bearer ${token}`,
+          authorization: `Bearer ${BEARER_TOKEN}`,
+          apikey: SUPABASE_ANON_KEY,
         },
         chunkSize: 6 * 1024 * 1024,
         allowedMetaFields: [
@@ -36,10 +38,21 @@
       });
 
       fileInput.addEventListener("change", async (event) => {
+        const folderName = String(Date.now());
+        const file = event.target.files[0];
+        const filteredFileName = file.name.replace(/[^a-z\d]/g, "-");
+        const objectName = `${folderName}/${filteredFileName}`;
+
         uppy.addFile({
-          name: event.target.files[0].name,
-          type: event.target.files[0].type,
-          data: event.target.files[0],
+          name: filteredFileName,
+          type: file.type,
+          data: file,
+          meta: {
+            ...file.meta,
+            bucketName: STORAGE_BUCKET,
+            objectName,
+            contentType: file.type,
+          },
         });
 
         const result = await uppy.upload();
